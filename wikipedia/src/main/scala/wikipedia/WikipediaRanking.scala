@@ -21,8 +21,12 @@ object WikipediaRanking {
     * Hint3: the only whitespaces are blanks " "
     * Hint4: no need to search in the title :)
     */
-  def occurrencesOfLang(lang: String, rdd: RDD[WikipediaArticle]): Int = wikiRdd.filter(wi => wi.text.contains(lang)).count().toInt
+  def occurrencesOfLang(lang: String, rdd: RDD[WikipediaArticle]): Int = rdd.filter(wi => containLang(lang, wi)).count().toInt
 
+  private def containLang(lang: String, wi: WikipediaArticle) = {
+    wi.text.contains(s"${lang} ")
+    //wi.text.matches(s"\b${lang}\b")
+  }
   /** (1) Use `occurrencesOfLang` to compute the ranking of the languages
     * (`langs`) by determining the number of Wikipedia articles that
     * mention each language at least once. Don't forget to sort the
@@ -38,7 +42,7 @@ object WikipediaRanking {
     * to the Wikipedia pages in which it occurs.
     */
   def makeIndex(langs: List[String], rdd: RDD[WikipediaArticle]): RDD[(String, Iterable[WikipediaArticle])] = {
-    rdd.flatMap(wi => langs.map(l => (l, wi.text.contains(l), wi)).filter(_._2).map(t => (t._1, t._3))).groupByKey()
+    rdd.flatMap(wi => langs.map(l => (l, containLang(l, wi), wi)).filter(_._2).map(t => (t._1, t._3))).groupByKey()
   }
 
   /** (2) Compute the language ranking again, but now using the inverted index. Can you notice
@@ -58,7 +62,7 @@ object WikipediaRanking {
     * several seconds.
     */
   def rankLangsReduceByKey(langs: List[String], rdd: RDD[WikipediaArticle]): List[(String, Int)] =
-    rdd.flatMap(wi => langs.map(l => (l, wi.text.contains(l), wi)).filter(_._2).map(t => (t._1, 1)))
+    rdd.flatMap(wi => langs.map(l => (l, containLang(l, wi), wi)).filter(_._2).map(t => (t._1, 1)))
       .reduceByKey((acc, v) => acc + v).collect().sortWith(_._2 > _._2).toList
 
   def main(args: Array[String]) {
