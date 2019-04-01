@@ -11,7 +11,39 @@ object WikipediaRanking {
     "JavaScript", "Java", "PHP", "Python", "C#", "C++", "Ruby", "CSS",
     "Objective-C", "Perl", "Scala", "Haskell", "MATLAB", "Clojure", "Groovy")
 
-  val conf: SparkConf = new SparkConf().setAppName("wikipediaArticle").setMaster("local")
+  /**
+    * DMA:Temps avec un seule thread .
+    * Processing Part 1: naive ranking took 44609 ms.
+    * Processing Part 2: ranking using inverted index took 18156 ms.
+    * Processing Part 3: ranking using reduceByKey took 13907 ms.
+    *
+    * DMA:Temps avec le nombre de process de la machine.
+    * Processing Part 1: naive ranking took 25914 ms.
+    * Processing Part 2: ranking using inverted index took 9359 ms.
+    * Processing Part 3: ranking using reduceByKey took 6641 ms.
+    *
+    * List((JavaScript,1692), (C#,706), (Java,586), (CSS,372), (C++,334), (MATLAB,295), (Python,286), (PHP,279), (Perl,144), (Ruby,120), (Haskell,54), (Objective-C,47), (Scala,43), (Clojure,26), (Groovy,23))
+    * List((JavaScript,1692), (C#,706), (Java,586), (CSS,372), (C++,334), (MATLAB,295), (Python,286), (PHP,279), (Perl,144), (Ruby,120), (Haskell,54), (Objective-C,47), (Scala,43), (Clojure,26), (Groovy,23))
+    * List((JavaScript,1692), (C#,706), (Java,586), (CSS,372), (C++,334), (MATLAB,295), (Python,286), (PHP,279), (Perl,144), (Ruby,120), (Haskell,54), (Objective-C,47), (Scala,43), (Clojure,26), (Groovy,23))
+    *
+    * --------------------------------Avec lowerCase-----------------------------
+    * DMA:Temps avec un seule thread .
+    * Processing Part 1: naive ranking took 64750 ms.
+    * Processing Part 2: ranking using inverted index took 41297 ms.
+    * Processing Part 3: ranking using reduceByKey took 37703 ms.
+    *
+    * DMA: Temps avec le nombre de process de la machine.
+    * Processing Part 1: naive ranking took 35735 ms.
+    * Processing Part 2: ranking using inverted index took 18312 ms.
+    * Processing Part 3: ranking using reduceByKey took 15782 ms.
+    *
+    * List((JavaScript,1721), (C#,707), (Java,618), (CSS,400), (C++,335), (Python,315), (MATLAB,307), (PHP,302), (Perl,167), (Ruby,125), (Haskell,56), (Objective-C,47), (Scala,44), (Clojure,26), (Groovy,26))
+    * List((JavaScript,1721), (C#,707), (Java,618), (CSS,400), (C++,335), (Python,315), (MATLAB,307), (PHP,302), (Perl,167), (Ruby,125), (Haskell,56), (Objective-C,47), (Scala,44), (Clojure,26), (Groovy,26))
+    * List((JavaScript,1721), (C#,707), (Java,618), (CSS,400), (C++,335), (Python,315), (MATLAB,307), (PHP,302), (Perl,167), (Ruby,125), (Haskell,56), (Objective-C,47), (Scala,44), (Clojure,26), (Groovy,26))
+    */
+  //val conf: SparkConf = new SparkConf().setAppName("wikipediaArticle").setMaster(s"local[${Runtime.getRuntime.availableProcessors()}]")
+  val conf: SparkConf = new SparkConf().setAppName("wikipediaArticle").setMaster(s"local[1]")
+
   val sc: SparkContext = new SparkContext(conf)
   val wikiRdd: RDD[WikipediaArticle] = sc.parallelize(WikipediaData.articles)
 
@@ -24,8 +56,10 @@ object WikipediaRanking {
   def occurrencesOfLang(lang: String, rdd: RDD[WikipediaArticle]): Int = rdd.filter(wi => containLang(lang, wi)).count().toInt
 
   private def containLang(lang: String, wi: WikipediaArticle) = {
-    wi.text.contains(s"${lang} ")
-    //wi.text.matches(s"\b${lang}\b")
+    //wi.text.contains(s" ${lang} ")
+    // 23 groovvy
+    wi.text.toLowerCase.split(" ").count(t => t.equals(lang.toLowerCase)) > 0;
+    //wi.text.matches(s" \b${lang}\b ")
   }
   /** (1) Use `occurrencesOfLang` to compute the ranking of the languages
     * (`langs`) by determining the number of Wikipedia articles that
