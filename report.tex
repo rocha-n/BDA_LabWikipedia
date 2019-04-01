@@ -1,0 +1,111 @@
+\documentclass[a4paper]{article}
+\usepackage[T1]{fontenc}
+\usepackage[utf8x]{inputenc}
+\usepackage[margin=1.1in]{geometry}
+\usepackage[english]{babel}
+\usepackage{graphicx}
+\usepackage{parskip}
+\usepackage{float}
+
+\usepackage{setspace} % increase interline spacing slightly
+\setstretch{1.1}
+
+\def \hfillx {\hspace*{-\textwidth} \hfill}
+
+\title{
+	Big Data Analytics \\
+	Lab 02 - Wikipedia}
+\author{
+	Damien Rochat, Dorian Magnin, and Nelson Rocha \\
+	Master of Science in Engineering \\
+	University of Applied Sciences and Arts Western Switzerland}
+\date{\today}
+
+\begin{document}
+	\maketitle
+	
+	\section{Results}
+	Here is the number of articles where each programming language has been found. Note, the comparison is made by lowercase.
+
+	\begin{table}[H]
+		\begin{minipage}{0.5\textwidth}
+			\centering
+
+			\begin{tabular}{|l|l|l|}
+				\hline
+				\textbf{Rank}  & \textbf{Language}  & \textbf{Number of articles} \\ \hline
+				1              & JavaScript         & 1'721                       \\ \hline
+				2              & C\#                & 707                         \\ \hline
+				3              & Java               & 618                         \\ \hline
+				4              & CSS                & 400                         \\ \hline
+				5              & C++                & 335                         \\ \hline
+				6              & Python             & 315                         \\ \hline
+				7              & MATLAB             & 307                         \\ \hline
+				8              & PHP                & 302                         \\ \hline
+				9              & Perl               & 167                         \\ \hline
+				10             & Ruby               & 125                         \\ \hline
+				11             & Haskell            & 56                          \\ \hline
+				12             & Objective-C        & 47                          \\ \hline
+				13             & Scala              & 44                          \\ \hline
+				14             & Clojure            & 26                          \\ \hline
+				15             & Groovy             & 26                          \\ \hline
+			\end{tabular}
+			\caption{Wikipedia lab ranking}
+
+		\end{minipage}
+		\hfillx
+		\begin{minipage}{0.5\textwidth}
+			\centering
+
+			\begin{tabular}{|l|l|l|}
+				\hline
+				\textbf{Rank}  & \textbf{Language} \\ \hline
+				1              & JavaScript        \\ \hline
+				2              & Java              \\ \hline
+				3              & Python            \\ \hline
+				4              & PHP               \\ \hline
+				5              & C\#               \\ \hline
+				6              & C++               \\ \hline
+				7              & CSS               \\ \hline
+				8              & Ruby              \\ \hline
+				9              & C                 \\ \hline
+				10             & Objective-C       \\ \hline
+				11             & Swift             \\ \hline
+				12             & Scala             \\ \hline
+				13             & Shell             \\ \hline
+				14             & Go                \\ \hline
+				15             & R                 \\ \hline
+				16             & TypeScript        \\ \hline
+				17             & PowerShell        \\ \hline
+				18             & Perl              \\ \hline
+				19             & Haskell           \\ \hline
+				20             & Lua               \\ \hline
+			\end{tabular}
+			\caption{RedMonk top-20 ranking (June 2018)}
+
+		\end{minipage}
+	\end{table}
+
+	Except for JavaScript, large winner in both cases, the Wikipedia ranking doesn't match RedMonk one.
+	However, the top-5 of the two rankings is almost the same, in different order.
+
+	\pagebreak
+
+	\section{Performances}
+	
+	\begin{table}[H]
+		\centering
+
+		\begin{tabular}{|l|l|l|}
+			\hline
+			\textbf{Iteration}           & \textbf{Time} \\ \hline
+			Naive ranking                & 32'798 ms     \\ \hline
+			Ranking using inverted index & 13'250 ms     \\ \hline
+			Ranking using reduceByKey    & 10'607 ms     \\ \hline
+		\end{tabular}
+		\caption{Processing time comparison}
+	\end{table}
+	
+	TODO: explain...
+
+\end{document}
