@@ -24,128 +24,109 @@
 \begin{document}
 	\maketitle
 	
-	\section{Results}
-	Here is the number of articles where each programming language has been found. Note, the comparison is made by lowercase.
+	\section{Introduction}
+	The aim of this laboratory is to discover Spark with a large amount of data.
+	In practice, we are going to extract popularity of programming languages,
+	based on provided Wikipedia dataset.
+	Here, a programming language will be more popular if it's referenced in more Wikipedia articles.
+	Finally, the results will be compared with the last RedMonk top-20.
 
-	\begin{table}[H]
-		\begin{minipage}{0.5\textwidth}
-			\centering
+	Spark could be run in a cluster, but for now, we'll just use our own computers.
 
-			\begin{tabular}{|l|l|l|}
-				\hline
-				\textbf{Rank}  & \textbf{Language}  & \textbf{Number of articles} \\ \hline
-				1              & JavaScript         & 1'721                       \\ \hline
-				2              & C\#                & 707                         \\ \hline
-				3              & Java               & 618                         \\ \hline
-				4              & CSS                & 400                         \\ \hline
-				5              & C++                & 335                         \\ \hline
-				6              & Python             & 315                         \\ \hline
-				7              & MATLAB             & 307                         \\ \hline
-				8              & PHP                & 302                         \\ \hline
-				9              & Perl               & 167                         \\ \hline
-				10             & Ruby               & 125                         \\ \hline
-				11             & Haskell            & 56                          \\ \hline
-				12             & Objective-C        & 47                          \\ \hline
-				13             & Scala              & 44                          \\ \hline
-				14             & Clojure            & 26                          \\ \hline
-				15             & Groovy             & 26                          \\ \hline
-			\end{tabular}
-			\caption{Wikipedia lab ranking}
+	\section{Implementation}
+	We filled the provided function as described above.
 
-		\end{minipage}
-		\hfillx
-		\begin{minipage}{0.5\textwidth}
-			\centering
+	A specific point is we had to split the text data into words to search matches programming languages name.
+	Here is the dedicated function:
 
-			\begin{tabular}{|l|l|l|}
-				\hline
-				\textbf{Rank}  & \textbf{Language} \\ \hline
-				1              & JavaScript        \\ \hline
-				2              & Java              \\ \hline
-				3              & Python            \\ \hline
-				4              & PHP               \\ \hline
-				5              & C\#               \\ \hline
-				6              & C++               \\ \hline
-				7              & CSS               \\ \hline
-				8              & Ruby              \\ \hline
-				9              & C                 \\ \hline
-				10             & Objective-C       \\ \hline
-				11             & Swift             \\ \hline
-				12             & Scala             \\ \hline
-				13             & Shell             \\ \hline
-				14             & Go                \\ \hline
-				15             & R                 \\ \hline
-				16             & TypeScript        \\ \hline
-				17             & PowerShell        \\ \hline
-				18             & Perl              \\ \hline
-				19             & Haskell           \\ \hline
-				20             & Lua               \\ \hline
-			\end{tabular}
-			\caption{RedMonk top-20 ranking (June 2018)}
+	\begin{verbatim}
+	def words: Array[String] = text
+		  .toLowerCase()
+		  .replaceAll("[!\"$%&'()*,./:;<=>?@\\[\\]^_`{|}~]", " ")
+		  .split(" ")
+	\end{verbatim}
 
-		\end{minipage}
-	\end{table}
+	The word extraction starts to lowercase the text, replace punctuation characters by a space and split by space.
+	We are able to extract « scala » from « I love Scala so much! » and from « I love Scala! ».
 
-	Except for JavaScript, large winner in both cases, the Wikipedia ranking doesn't match RedMonk one.
-	However, the top-5 of the two rankings is almost the same, in different order.
+	Based on our results, we still miss some references to our list of programming languages.
+	This is because we didn't replace characters \textit{\#+-} with spaces.
+	Those are used by some programming languages name.
 
-	\pagebreak
+	\subsection{Naive Ranking}
+	The first algorithm, based on the \textit{aggregate} function.
+	The Wikipedia articles are passed through one time per language, which is not efficient.
+	This took 46 seconds to finish.
 
-	\section{Performances}
-	
-	\begin{table}[H]
-		\centering
+	\begin{verbatim}
+		Processing Part 1: naive ranking took 45991 ms.
+	\end{verbatim}
 
-		\begin{tabular}{|l|l|l|}
-			\hline
-			\textbf{Iteration}           & \textbf{Time} \\ \hline
-			Naive ranking                & 54'571 ms     \\ \hline
-			Ranking using inverted index & 26'538 ms     \\ \hline
-			Ranking using reduceByKey    & 23'593 ms     \\ \hline
-		\end{tabular}
-		\caption{Execution times}
-	\end{table}
-	
-	These are our obtained execution times. \\
-	Let's take the \textit{Naive ranking} time as a base, and see how we manage to speed it up.
-	
-	At the second step we managed to get a speedup of a roughly 50\%.  \\
-	This is due to the inverted index use. By providing us with the information of which article contains which language, it spares us the work of parsing all the RDD. \\
+	\subsection{Ranking with an inverted index}
+	At the second step we managed to get a speedup of a roughly 45\%. \\
+	This is due to the inverted index use. By providing us with the information of which article contains which language,
+	it spares us the work of parsing all the RDD, for each programming language. \\
     So the results are far quicker to retrieve.
-	
-	Finally, we achieved a bit more speedup by using the `reduceByKey` instruction. \\
-	By reducing before the shuffling, we greatly reduce the amount of data that will be sent through the network. \\
+
+	\begin{verbatim}
+		Processing Part 2: ranking using inverted index took 25603 ms.
+	\end{verbatim}
+
+	\subsection{Ranking with reduceByKey}
+	Finally, we achieved a bit more speedup by using the \textit{reduceByKey} instruction. \\
+	By reducing before the shuffling, we greatly distribute the computation between workers. \\
 	As we are working on our own machines, the beneficial effects of this change are not very important.
 	But if we were using a remote Spark cluster, the improvements would have been far more visible.
-	
-	Finally, we wondered if there was nothing we could do to improve our execution times in this specific configuration, which is by having all running in a single machine?
-	
-	We manage to use all the logical cores seen by the underlying JVM, by declaring our context with  
+
 	\begin{verbatim}
-	val conf: SparkConf = new SparkConf()
-	    .setAppName("wikipediaArticle") 
-	    .setMaster(s\"local[\${Runtime.getRuntime.availableProcessors()}]\")
-    \end{verbatim}	
-	instead of  
-	\begin{verbatim}
-	val conf: SparkConf = new SparkConf()
-	    .setAppName("wikipediaArticle").setMaster(s"local[1]")
+		Processing Part 3: ranking using reduceByKey took 22242 ms.
 	\end{verbatim}
-	
-	And we got the following execution times:
-	
+
+	\section{Results}
+	We obtained the same results with the three ranking algorithms.
+
+	\begin{verbatim}
+		List((JavaScript,1769), (PHP,1416), (Java,891), (C#,785), (CSS,580),
+		  (Python,556), (C++,553), (MATLAB,343), (Perl,317), (Ruby,273),
+		  (Haskell,128), (Objective-C,111), (Scala,96), (Groovy,62), (Clojure,59))
+	\end{verbatim}
+
+	Except for JavaScript, large winner in both cases, our Wikipedia ranking doesn't match RedMonk one.
+	However, the top-7 of the two rankings is almost the same, in different order.
+
 	\begin{table}[H]
 		\centering
-
 		\begin{tabular}{|l|l|l|}
 			\hline
-			\textbf{Iteration}           & \textbf{Time} \\ \hline
-			Naive ranking                & 45'991 ms     \\ \hline
-			Ranking using inverted index & 25'603 ms     \\ \hline
-			Ranking using reduceByKey    & 22'242 ms     \\ \hline
+			\textbf{Rank}  & \textbf{Wikipedia Lab}  & \textbf{RedMonk} \\ \hline
+			\hline
+			1              & JavaScript              & JavaScript       \\ \hline
+			2              & PHP                     & Java             \\ \hline
+			3              & Java                    & Python           \\ \hline
+			4              & C\#                     & PHP              \\ \hline
+			5              & CSS                     & C\#              \\ \hline
+			6              & Python                  & C++              \\ \hline
+			7              & C++                     & CSS              \\ \hline
+			\hline
+			8              & MATLAB                  & Ruby             \\ \hline
+			9              & Perl                    & C                \\ \hline
+			10             & Ruby                    & Objective-C      \\ \hline
+			11             & Haskell                 & Swift            \\ \hline
+			12             & Objective-C             & TypeScript       \\ \hline
+			13             & Scala                   & Scala            \\ \hline
+			14             & Groovy                  & Shell            \\ \hline
+			15             & Clojure                 & Go               \\ \hline
+			16             &                         & R                \\ \hline
+			17             &                         & PowerShell       \\ \hline
+			18             &                         & Perl             \\ \hline
+			19             &                         & Haskell          \\ \hline
+			20             &                         & Kotlin           \\ \hline
 		\end{tabular}
-		\caption{Best execution times obtained}
+		\caption{Wikipedia lab vs RedMonk january 2019 ranking}
 	\end{table}
 	
+	The RedMonk ranking uses more sources, like GitHub and StackOverflow.
+
+	We can conclude that \textbf{JavaScript} is the current most used programming language.
 
 \end{document}

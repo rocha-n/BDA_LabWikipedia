@@ -9,7 +9,7 @@ case class WikipediaArticle(title: String, text: String) {
     * Helper function to generate word list.
     *
     * Words are seperated by spaces and ponctuation.
-    * Note: +#- ponctuation characters are not used,
+    * Note: +#- punctuation characters are not used,
     * because they are part of some programming languages name.
     */
   def words: Array[String] = text
