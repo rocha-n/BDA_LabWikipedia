@@ -3,7 +3,25 @@ package wikipedia
 import org.apache.spark.rdd.RDD
 import org.apache.spark.{SparkConf, SparkContext}
 
-case class WikipediaArticle(title: String, text: String)
+case class WikipediaArticle(title: String, text: String) {
+
+  /**
+    * Helper function to generate word list.
+    *
+    * Words are seperated by spaces and ponctuation.
+    * Note: +#- ponctuation characters are not used,
+    * because they are part of some programming languages name.
+    */
+  def words: Array[String] = text
+      .toLowerCase()
+      .replaceAll("[!\"$%&'()*,./:;<=>?@\\[\\]^_`{|}~]", " ")
+      .split(" ")
+
+  /**
+    * Helper function to check whether this mentions the programming language.
+    */
+  def containsLang(lang: String): Boolean = words.contains(lang.toLowerCase())
+}
 
 object WikipediaRanking {
 
@@ -12,60 +30,19 @@ object WikipediaRanking {
     "Objective-C", "Perl", "Scala", "Haskell", "MATLAB", "Clojure", "Groovy")
 
   /**
-    * DMA: Temps avec un seul thread.
-    * Processing Part 1: naive ranking took 44609 ms.
-    * Processing Part 2: ranking using inverted index took 18156 ms.
-    * Processing Part 3: ranking using reduceByKey took 13907 ms.
+    * List((JavaScript,1769), (PHP,1416), (Java,891), (C#,785), (CSS,580), (Python,556), (C++,553), (MATLAB,343), (Perl,317), (Ruby,273), (Haskell,128), (Objective-C,111), (Scala,96), (Groovy,62), (Clojure,59))
+    * List((JavaScript,1769), (PHP,1416), (Java,891), (C#,785), (CSS,580), (Python,556), (C++,553), (MATLAB,343), (Perl,317), (Ruby,273), (Haskell,128), (Objective-C,111), (Scala,96), (Groovy,62), (Clojure,59))
+    * List((JavaScript,1769), (PHP,1416), (Java,891), (C#,785), (CSS,580), (Python,556), (C++,553), (MATLAB,343), (Perl,317), (Ruby,273), (Haskell,128), (Objective-C,111), (Scala,96), (Groovy,62), (Clojure,59))
     *
-    * DMA: Temps avec le nombre de process de la machine.
-    * Processing Part 1: naive ranking took 25914 ms.
-    * Processing Part 2: ranking using inverted index took 9359 ms.
-    * Processing Part 3: ranking using reduceByKey took 6641 ms.
-    *
-    * List((JavaScript,1692), (C#,706), (Java,586), (CSS,372), (C++,334), (MATLAB,295), (Python,286), (PHP,279), (Perl,144), (Ruby,120), (Haskell,54), (Objective-C,47), (Scala,43), (Clojure,26), (Groovy,23))
-    * List((JavaScript,1692), (C#,706), (Java,586), (CSS,372), (C++,334), (MATLAB,295), (Python,286), (PHP,279), (Perl,144), (Ruby,120), (Haskell,54), (Objective-C,47), (Scala,43), (Clojure,26), (Groovy,23))
-    * List((JavaScript,1692), (C#,706), (Java,586), (CSS,372), (C++,334), (MATLAB,295), (Python,286), (PHP,279), (Perl,144), (Ruby,120), (Haskell,54), (Objective-C,47), (Scala,43), (Clojure,26), (Groovy,23))
-    *
-    * --------------------------------Avec lowerCase-----------------------------
-    * DMA: Temps avec un seul thread.
-    * Processing Part 1: naive ranking took 64750 ms.
-    * Processing Part 2: ranking using inverted index took 41297 ms.
-    * Processing Part 3: ranking using reduceByKey took 37703 ms.
-    *
-    * DMA: Temps avec le nombre de process de la machine.
-    * Processing Part 1: naive ranking took 35735 ms.
-    * Processing Part 2: ranking using inverted index took 18312 ms.
-    * Processing Part 3: ranking using reduceByKey took 15782 ms.
-    *
-    * List((JavaScript,1721), (C#,707), (Java,618), (CSS,400), (C++,335), (Python,315), (MATLAB,307), (PHP,302), (Perl,167), (Ruby,125), (Haskell,56), (Objective-C,47), (Scala,44), (Clojure,26), (Groovy,26))
-    * List((JavaScript,1721), (C#,707), (Java,618), (CSS,400), (C++,335), (Python,315), (MATLAB,307), (PHP,302), (Perl,167), (Ruby,125), (Haskell,56), (Objective-C,47), (Scala,44), (Clojure,26), (Groovy,26))
-    * List((JavaScript,1721), (C#,707), (Java,618), (CSS,400), (C++,335), (Python,315), (MATLAB,307), (PHP,302), (Perl,167), (Ruby,125), (Haskell,56), (Objective-C,47), (Scala,44), (Clojure,26), (Groovy,26))
+    * Processing Part 1: naive ranking took 45991 ms.
+    * Processing Part 2: ranking using inverted index took 25603 ms.
+    * Processing Part 3: ranking using reduceByKey took 22242 ms.
     */
 
-  /**
-    * DRO: Temps avec un seul thread.
-    * Processing Part 1: naive ranking took 54571 ms.
-    * Processing Part 2: ranking using inverted index took 26538 ms.
-    * Processing Part 3: ranking using reduceByKey took 23593 ms.
-    *
-    * DRO: Temps avec le nombre de process de la machine.
-    * Processing Part 1: naive ranking took 32798 ms.
-    * Processing Part 2: ranking using inverted index took 13250 ms.
-    * Processing Part 3: ranking using reduceByKey took 10607 ms.
-    */
-
-//  val conf: SparkConf = new SparkConf().setAppName("wikipediaArticle").setMaster(s"local[${Runtime.getRuntime.availableProcessors()}]")
-  val conf: SparkConf = new SparkConf().setAppName("wikipediaArticle").setMaster(s"local[1]")
+  val conf: SparkConf = new SparkConf().setAppName("wikipediaArticle").setMaster(s"local[*]")
 
   val sc: SparkContext = new SparkContext(conf)
   val wikiRdd: RDD[WikipediaArticle] = sc.parallelize(WikipediaData.articles)
-
-  /**
-    * Helper function to check whether an article mentions the programming language.
-    */
-  def containsLang(lang: String, wi: WikipediaArticle): Boolean = {
-    wi.text.toLowerCase().split(" ").contains(lang.toLowerCase())
-  }
 
   /** Returns the number of articles on which the language `lang` occurs.
     * Hint1: consider using method `aggregate` on RDD[T].
@@ -74,7 +51,7 @@ object WikipediaRanking {
     * Hint4: no need to search in the title :)
     */
   def occurrencesOfLang(lang: String, rdd: RDD[WikipediaArticle]): Int = {
-    rdd.aggregate(0)((acc, wi) => if (containsLang(lang, wi)) acc+1 else acc, _ + _)
+    rdd.aggregate(0)((acc, wi) => if (wi.containsLang(lang)) acc+1 else acc, _ + _)
   }
 
   /** (1) Use `occurrencesOfLang` to compute the ranking of the languages
@@ -93,7 +70,7 @@ object WikipediaRanking {
     * to the Wikipedia pages in which it occurs.
     */
   def makeIndex(langs: List[String], rdd: RDD[WikipediaArticle]): RDD[(String, Iterable[WikipediaArticle])] = {
-    rdd.flatMap(wi => langs.filter(lang => containsLang(lang, wi)).map(lang => (lang, wi))).groupByKey()
+    rdd.flatMap(wi => langs.filter(lang => wi.containsLang(lang)).map(lang => (lang, wi))).groupByKey()
   }
 
   /** (2) Compute the language ranking again, but now using the inverted index. Can you notice
@@ -114,7 +91,7 @@ object WikipediaRanking {
     * several seconds.
     */
   def rankLangsReduceByKey(langs: List[String], rdd: RDD[WikipediaArticle]): List[(String, Int)] = {
-    rdd.flatMap(wi => langs.filter(l => containsLang(l, wi)).map(t => (t, 1)))
+    rdd.flatMap(wi => langs.filter(lang => wi.containsLang(lang)).map(t => (t, 1)))
       .reduceByKey(_+_).collect().sortWith(_._2 > _._2).toList
   }
 
