@@ -99,13 +99,53 @@
 		\begin{tabular}{|l|l|l|}
 			\hline
 			\textbf{Iteration}           & \textbf{Time} \\ \hline
-			Naive ranking                & 32'798 ms     \\ \hline
-			Ranking using inverted index & 13'250 ms     \\ \hline
-			Ranking using reduceByKey    & 10'607 ms     \\ \hline
+			Naive ranking                & 54'571 ms     \\ \hline
+			Ranking using inverted index & 26'538 ms     \\ \hline
+			Ranking using reduceByKey    & 23'593 ms     \\ \hline
 		\end{tabular}
-		\caption{Processing time comparison}
+		\caption{Execution times}
 	\end{table}
 	
-	TODO: explain...
+	These are our obtained execution times. \\
+	Let's take the \textit{Naive ranking} time as a base, and see how we manage to speed it up.
+	
+	At the second step we managed to get a speedup of a roughly 50\%.  \\
+	This is due to the inverted index use. By providing us with the information of which article contains which language, it spares us the work of parsing all the RDD. \\
+    So the results are far quicker to retrieve.
+	
+	Finally, we achieved a bit more speedup by using the `reduceByKey` instruction. \\
+	By reducing before the shuffling, we greatly reduce the amount of data that will be sent through the network. \\
+	As we are working on our own machines, the beneficial effects of this change are not very important.
+	But if we were using a remote Spark cluster, the improvements would have been far more visible.
+	
+	Finally, we wondered if there was nothing we could do to improve our execution times in this specific configuration, which is by having all running in a single machine?
+	
+	We manage to use all the logical cores seen by the underlying JVM, by declaring our context with  
+	\begin{verbatim}
+	val conf: SparkConf = new SparkConf()
+	    .setAppName("wikipediaArticle") 
+	    .setMaster(s\"local[\${Runtime.getRuntime.availableProcessors()}]\")
+    \end{verbatim}	
+	instead of  
+	\begin{verbatim}
+	val conf: SparkConf = new SparkConf()
+	    .setAppName("wikipediaArticle").setMaster(s"local[1]")
+	\end{verbatim}
+	
+	And we got the following execution times:
+	
+	\begin{table}[H]
+		\centering
+
+		\begin{tabular}{|l|l|l|}
+			\hline
+			\textbf{Iteration}           & \textbf{Time} \\ \hline
+			Naive ranking                & 45'991 ms     \\ \hline
+			Ranking using inverted index & 25'603 ms     \\ \hline
+			Ranking using reduceByKey    & 22'242 ms     \\ \hline
+		\end{tabular}
+		\caption{Best execution times obtained}
+	\end{table}
+	
 
 \end{document}
